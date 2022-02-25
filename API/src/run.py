@@ -1,3 +1,4 @@
+import datetime
 import os
 from dotenv import load_dotenv
 
@@ -38,19 +39,6 @@ def get_all_users():
     return jsonify(data)
 
 
-@app.route("/user", methods=["POST"])
-def add_user():
-    data = request.get_json()
-    user = UserModel(
-        name=data.get("name"), email=data.get("email"), password=data.get("password")
-    )
-    user.save()
-    serializer = RecipeSchema()
-    data = serializer.dump(user)
-
-    return jsonify(data), 201
-
-
 @app.route("/user/<int:id>", methods=["GET"])
 def get_user(id):
     recipe = UserModel.get_by_id(id)
@@ -60,17 +48,34 @@ def get_user(id):
     return jsonify(data), 200
 
 
+@app.route("/user", methods=["POST"])
+def add_user():
+    data = request.get_json()
+    user = UserModel(
+        name=data.get("name"),
+        email=data.get("email"),
+        password=data.get("password"),
+        modified_at=datetime.datetime.utcnow(),
+    )
+    user.save()
+    serializer = RecipeSchema()
+    data = serializer.dump(user)
+
+    return jsonify(data), 201
+
+
 @app.route("/user/<int:id>", methods=["PUT"])
 def update_recipe(id):
     user = UserModel.get_by_id(id)
     data = request.get_json()
-    user.name = data.get("name")
-    user.email = data.get("email")
-    user.password = data.get("pwd")
+    user.name = data.get("name") if data.get("name") else user.name
+    user.email = data.get("email") if data.get("email") else user.email
+    user.password = data.get("password") if data.get("password") else user.password
+    user.modified_at = datetime.datetime.utcnow()
 
     db.session.commit()
     serializer = RecipeSchema()
-    recipe_data = serializer.dump(user)
+    recipe_data = serializer.dump(data)
 
     return jsonify(recipe_data), 200
 

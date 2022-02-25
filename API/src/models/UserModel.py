@@ -9,7 +9,7 @@ class UserModel(db.Model):
     email = db.Column(db.String(128), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modified_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    modified_at = db.Column(db.DateTime)
 
     def __repr__(self):
         return self.name
