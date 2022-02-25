@@ -1,5 +1,7 @@
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class Development(object):
     """
@@ -8,8 +10,8 @@ class Development(object):
 
     DEBUG = True
     TESTING = False
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
@@ -20,8 +22,8 @@ class Production(object):
 
     DEBUG = False
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
 
 
 app_config = {

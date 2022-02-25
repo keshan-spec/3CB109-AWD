@@ -1,12 +1,17 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from flask import jsonify, request
 
 # custom imports
-from app import create_app
-from models.RecipeModel import Recipe, RecipeSchema
+from app import db, create_app
+from models.RecipeModel import RecipeModel, RecipeSchema
+from models.UserModel import UserModel, UserSchema
 
 # create and configure the flask app
-env_name = os.getenv("FLASK_ENV")
+env_name = os.environ.get("FLASK_ENV")
 app = create_app(env_name)
 
 
@@ -25,78 +30,66 @@ def internal_server(error):
 
 
 # ROUTES: Users
-@app.route("/recipes", methods=["GET"])
-def get_all_recipes():
-    recipes = Recipe.get_all()
-    serializer = RecipeSchema(many=True)
-    data = serializer.dump(recipes)
+@app.route("/users", methods=["GET"])
+def get_all_users():
+    users = UserModel.get_all()
+    serializer = UserSchema(many=True)
+    data = serializer.dump(users)
     return jsonify(data)
 
 
-@app.route("/recipes", methods=["POST"])
-def create_a_recipe():
+@app.route("/user", methods=["POST"])
+def add_user():
     data = request.get_json()
-    new_recipe = Recipe(name=data.get("name"), description=data.get("description"))
-    new_recipe.save()
+    user = UserModel(
+        name=data.get("name"), email=data.get("email"), password=data.get("password")
+    )
+    user.save()
     serializer = RecipeSchema()
-    data = serializer.dump(new_recipe)
+    data = serializer.dump(user)
 
     return jsonify(data), 201
 
 
-@app.route("/recipe/<int:id>", methods=["GET"])
-def get_recipe(id):
-    recipe = Recipe.get_by_id(id)
+@app.route("/user/<int:id>", methods=["GET"])
+def get_user(id):
+    recipe = UserModel.get_by_id(id)
     serializer = RecipeSchema()
     data = serializer.dump(recipe)
 
     return jsonify(data), 200
 
 
-@app.route("/recipe/<int:id>", methods=["PUT"])
+@app.route("/user/<int:id>", methods=["PUT"])
 def update_recipe(id):
-    recipe_to_update = Recipe.get_by_id(id)
+    user = UserModel.get_by_id(id)
     data = request.get_json()
-    recipe_to_update.name = data.get("name")
-    recipe_to_update.description = data.get("description")
+    user.name = data.get("name")
+    user.email = data.get("email")
+    user.password = data.get("pwd")
 
     db.session.commit()
     serializer = RecipeSchema()
-    recipe_data = serializer.dump(recipe_to_update)
+    recipe_data = serializer.dump(user)
 
     return jsonify(recipe_data), 200
 
 
-@app.route("/recipe/<int:id>", methods=["DELETE"])
-def delete_recipe(id):
-    recipe_to_delete = Recipe.get_by_id(id)
-
-    recipe_to_delete.delete()
-
-    return jsonify({"message": "Deleted"}), 204
+@app.route("/user/<int:id>", methods=["DELETE"])
+def delete_user(id):
+    try:
+        user = UserModel.get_by_id(id)
+        user.delete()
+        return jsonify({"Message": "Deleted"}), 204
+    except Exception as e:
+        return jsonify({"Error": e}), 500
 
 
 # ROUTE: Index
-incomes = [{"description": "salary", "amount": 5000}]
-
-
 @app.route("/")
 def home():
     return jsonify("Hello world")
 
 
-@app.route("/incomes")
-def get_incomes():
-    return jsonify(incomes)
-
-
-@app.route("/incomes", methods=["POST"])
-def add_income():
-    incomes.append(request.get_json())
-    return "", 204
-
-
 if __name__ == "__main__":
-
-    # run app
-    app.run()
+    app.run()  # run app
