@@ -12,7 +12,7 @@ class UserModel(db.Model):
     modified_at = db.Column(db.DateTime)
 
     def __repr__(self):
-        return self.name
+        return f"UserObject<{self.id}:{self.name}>"
 
     @classmethod
     def get_all(cls):
@@ -30,16 +30,20 @@ class UserModel(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-    def __generate_hash(self, password):
+    def generate_hash(self, password):
         return bcrypt.generate_password_hash(password, rounds=10).decode("utf-8")
 
     def check_hash(self, password):
-        return bcrypt.check_password_hash(self.password, password)
+        try:
+            # print(f"Verifying User Password<{self.password}> with input<{password}>")
+            return (bcrypt.check_password_hash(self.password, password), "ok")
+        except Exception as e:
+            return (False, e)
 
     def update(self, data):
         for key, item in data.items():
             if key == "password":
-                self.password = self.__generate_hash(item)
+                self.password = self.generate_hash(item)
             setattr(self, key, item)
         self.modified_at = datetime.datetime.utcnow()
         db.session.commit()
