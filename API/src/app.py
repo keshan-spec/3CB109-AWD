@@ -93,6 +93,12 @@ def fill_tables():
             "user_id": 1,
             "joined_on": datetime.datetime.utcnow(),
         },
+        {
+            "name": "Mc Donalds Designer Outlet",
+            "location": "Designer Outlet, YO10 3RA, York, UK",
+            "user_id": 3,
+            "joined_on": datetime.datetime.utcnow(),
+        },
     ]
 
     for workplace in workplaces:
@@ -120,7 +126,16 @@ def fill_tables():
             "repeat": "Never",
             "work_id": 1,
             "user_id": 1,
-        }
+        },
+        {
+            "name": "Event 2",
+            "description": "This is the second event",
+            "start": datetime.datetime.utcnow(),
+            "finish": datetime.datetime.utcnow(),
+            "repeat": "Never",
+            "work_id": 2,
+            "user_id": 1,
+        },
     ]
 
     for event in events:

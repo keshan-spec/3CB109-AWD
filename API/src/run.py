@@ -1,14 +1,15 @@
 import datetime
 import os, jwt
 from sqlalchemy.exc import SQLAlchemyError
+from flask import jsonify, request
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from flask import jsonify, request
 
 # custom imports
 from app import db, create_app
+from models.WorkPlace import WorkPlaceModel, WorkPlaceSchema
 from models.EventModel import EventSchema, EventModel
 from models.UserModel import UserModel, UserSchema
 from decorators import token_required
@@ -196,6 +197,48 @@ def register():
     except SQLAlchemyError as e:
         error = str(e.__dict__["orig"])
         return jsonify({"SQLALCHEMY ERROR": error}), 500
+
+
+@app.route(f"{API_URL}/user/workplc", methods=["GET"])
+@token_required
+def get_user_workplaces(current_user):
+    """
+    Get the current user's workplaces
+    """
+    wp = WorkPlaceModel.get_by_user(current_user.id)
+    if wp.count() == 0:
+        return jsonify({"message": "No workplaces found"}), 400
+
+    serializer = WorkPlaceSchema(many=True)
+    data = serializer.dump(wp)
+    return jsonify(data), 200
+
+
+@app.route(f"{API_URL}/user/events", methods=["GET"])
+@token_required
+def get_user_events(current_user):
+    """
+    Get the current user's workplaces
+    """
+    event = EventModel.get_by_user(current_user.id)
+
+    # serialize the user data and discard the password
+    user = UserSchema()
+    data = user.dump(current_user)
+    data.pop("password")
+
+    # if there are no events
+    if len(event) < 1:
+        return jsonify({"message": "No events found"}), 400
+
+    # serialize each work place model, remove the user_id column and add to list
+    for i in range(len(event)):
+        work_serializer = WorkPlaceSchema()
+        _work = work_serializer.dump(event[i]["work"])
+        _work.pop("user_id")
+        event[i]["work"] = _work
+
+    return jsonify({"user": data, "events": event}), 200
 
 
 # ROUTE: Index

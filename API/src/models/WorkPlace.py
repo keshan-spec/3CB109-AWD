@@ -1,6 +1,7 @@
 from sqlalchemy.orm import relationship
 from marshmallow import fields, Schema
 from . import db
+from models.UserModel import UserModel
 
 
 class WorkPlaceModel(db.Model):
@@ -14,15 +15,19 @@ class WorkPlaceModel(db.Model):
     user = relationship("UserModel")
 
     def __repr__(self):
-        return self.name
+        return f"WorkPlace<id={self.id}, name={self.name}, user_id={self.user_id}>"
 
     @classmethod
     def get_all(cls):
-        return cls.query.all()
+        results = []
+        for result in cls.query.all():
+            _ = result.__dict__.pop("user_id")
+            results.append(result.__dict__)
 
-    @classmethod
-    def get_by_id(cls, id):
-        return cls.query.get_or_404(id)
+        return results
+
+    def get_by_user(id):
+        return WorkPlaceModel.query.join(UserModel, WorkPlaceModel.user_id == id)
 
     def save(self):
         db.session.add(self)
@@ -35,7 +40,7 @@ class WorkPlaceModel(db.Model):
 
 class WorkPlaceSchema(Schema):
     id = fields.Integer()
+    user_id = fields.Integer()
+    joined_on = fields.DateTime()
     name = fields.String()
     location = fields.String()
-    joined_on = fields.DateTime()
-    user_id = fields.Integer()
