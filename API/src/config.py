@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Development(object):
     """
     Development environment configuration
@@ -11,7 +12,7 @@ class Development(object):
     DEBUG = True
     TESTING = False
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI = os.environ.get("MYSQL_DB")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 

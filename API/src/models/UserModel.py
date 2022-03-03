@@ -1,22 +1,47 @@
 import datetime
+from unittest import result
 from marshmallow import fields, Schema
+from sqlalchemy.orm import defer, undefer
 from . import db, bcrypt
 
 
 class UserModel(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(128), nullable=False)
+    fname = db.Column(db.String(128), nullable=False)
+    lname = db.Column(db.String(128), nullable=False)
     email = db.Column(db.String(128), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modified_at = db.Column(db.DateTime)
 
+    # # Relationships
+    # events = db.relationship("EventModel")
+    # workplaces = db.relationship("WorkPlaceModel")
+
     def __repr__(self):
-        return f"UserObject<{self.id}:{self.name}>"
+        return f"User<id={self.id}, name={self.fname} {self.lname}, email={self.email}>"
 
     @classmethod
     def get_all(cls):
-        return cls.query.all()
+        results = []
+        for result in cls.query.all():
+            _ = result.__dict__.pop("password")
+            results.append(result.__dict__)
+
+        return results
+
+    def find(**kwargs):
+        """Return filtered AND query results for passed in kwargs.
+
+        Example:
+
+            # find all instances of MyModel for first name 'John' AND last name 'Doe'
+            MyModel.find(first_name='John', last_name='Doe')
+
+        Returns result list or None.
+        """
+
+        return UserModel.query.filter_by(**kwargs).all()
 
     @classmethod
     def get_by_id(cls, id):
@@ -51,7 +76,8 @@ class UserModel(db.Model):
 
 class UserSchema(Schema):
     id = fields.Integer()
-    name = fields.String()
+    fname = fields.String()
+    lname = fields.String()
     email = fields.Email()
     password = fields.String()
     created_at = fields.DateTime()

@@ -5,17 +5,29 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from flask import jsonify, make_response, request
+from flask import jsonify, request
 
 # custom imports
-from app import db, create_app, bcrypt
-from models.RecipeModel import RecipeModel, RecipeSchema
+from app import db, create_app
+from models.EventModel import EventSchema, EventModel
 from models.UserModel import UserModel, UserSchema
 from decorators import token_required
 
 # create and configure the flask app
-env_name = os.environ.get("FLASK_ENV")
+env_name = os.getenv("FLASK_ENV")
+API_URL = "/api/v1"
+
 app = create_app(env_name)
+
+
+def create_token(id, exp=30):
+    return jwt.encode(
+        {
+            "id": id,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=exp),
+        },
+        os.environ.get("JWT_SECRET_KEY"),
+    )
 
 
 """
@@ -25,16 +37,16 @@ Sub routes: /auth, /users,
 # ROUTES: Error Handles
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({"message": "Resource not found"}), 404
+    return jsonify({"ERROR": "Invalid route!"}), 404
 
 
 @app.errorhandler(500)
 def internal_server(error):
-    return jsonify({"message": "There is a problem"}), 500
+    return jsonify({"ERROR": "Internal server error!"}), 500
 
 
 # ROUTES: Users
-@app.route("/users", methods=["GET"])
+@app.route(f"{API_URL}/users", methods=["GET"])
 @token_required
 def get_all_users(_):
     """
@@ -42,23 +54,35 @@ def get_all_users(_):
     users = UserModel.get_all()
     serializer = UserSchema(many=True)
     data = serializer.dump(users)
-    return jsonify(data)
+    return jsonify(data), 200
 
 
-@app.route("/user/<int:id>", methods=["GET"])
+@app.route(f"{API_URL}/user/<int:id>", methods=["GET"])
 @token_required
 def get_user(_, id):
     """
     Get a user record
     @params: id"""
-    recipe = UserModel.get_by_id(id)
+    users = UserModel.get_by_id(id)
     serializer = UserSchema()
-    data = serializer.dump(recipe)
+    data = serializer.dump(users)
 
     return jsonify(data), 200
 
 
-@app.route("/user/<int:id>", methods=["PUT"])
+@app.route(f"{API_URL}/users/find", methods=["GET"])
+@token_required
+def find(_):
+    """
+    Find specific records"""
+
+    users = UserModel.find(**request.get_json())
+    serializer = UserSchema(many=True)
+    data = serializer.dump(users)
+    return jsonify(data), 200
+
+
+@app.route(f"{API_URL}/user/<int:id>", methods=["PUT"])
 @token_required
 def update_user(current_user, id):
     """
@@ -66,23 +90,25 @@ def update_user(current_user, id):
     @params: id"""
 
     user = UserModel.get_by_id(id)
-    print(user, current_user)
+
     if user.id != current_user.id:
-        return jsonify({"message": "Unauthorized action"}), 401
+        return jsonify({"ERROR": "Unauthorized action"}), 401
+
     data = request.get_json()
-    user.name = data.get("name") if data.get("name") else user.name
+    user.fname = data.get("fname") if data.get("fname") else user.fname
+    user.lname = data.get("lname") if data.get("lname") else user.lname
     user.email = data.get("email") if data.get("email") else user.email
     user.password = data.get("password") if data.get("password") else user.password
     user.modified_at = datetime.datetime.utcnow()
 
     db.session.commit()
     serializer = UserSchema()
-    recipe_data = serializer.dump(data)
+    updated_data = serializer.dump(data)
 
-    return jsonify(recipe_data), 200
+    return jsonify({"UPDATED": updated_data}), 200
 
 
-@app.route("/user/<int:id>", methods=["DELETE"])
+@app.route(f"{API_URL}/user/<int:id>", methods=["DELETE"])
 @token_required
 def delete_user(current_user, id):
     """
@@ -91,30 +117,25 @@ def delete_user(current_user, id):
     try:
         user = UserModel.get_by_id(id)
         user.delete()
-        return jsonify({"Message": f"User with ID<{id}> deleted"}), 204
+        return jsonify({"message": f"{user} deleted"}), 200
     except SQLAlchemyError as e:
         error = str(e.__dict__["orig"])
         return jsonify({"Error": error}), 500
     except Exception as e:
-        return jsonify({"Error": str(e)}), 401
+        return jsonify({"Error": str(e)}), 500
 
 
 # ROUTES: Auth
-@app.route("/login", methods=["POST"])
+@app.route(f"{API_URL}/login", methods=["POST"])
 def login():
     # creates dictionary of form data
     auth = request.form
 
     if not auth or not auth.get("email") or not auth.get("password"):
         # returns 401 if any email or / and password is missing
-        return make_response(
-            "Could not verify",
-            401,
-            {"WWW-Authenticate": "Credentials Missing"},
-        )
+        return (jsonify({"ERROR": "Credentials missing!"}), 401)
 
     user = UserModel.query.filter_by(email=auth.get("email")).first()
-
     if not user:
         # returns 401 if user does not exist
         return (
@@ -126,36 +147,22 @@ def login():
         valid, status = user.check_hash(auth.get("password"))
         if valid:
             # generates the JWT Token
-            token = jwt.encode(
-                {
-                    "id": user.id,
-                    "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
-                },
-                os.environ.get("JWT_SECRET_KEY"),
-            )
-
-            return make_response(jsonify({"token": token}), 201)
+            token = create_token(user.id)
+            return jsonify({"token": token}), 200
 
         # returns 403 if password is wrong
-        return make_response(
-            f"Could not verify - {status}",
-            403,
-            {"WWW-Authenticate": status},
-        )
+        return jsonify(f"Could not verify - {status}"), 403
     except Exception as e:
-        return make_response(
-            f"Could not verify - {e}",
-            401,
-            {"WWW-Authenticate": e},
-        )
+        return jsonify(f"Could not verify - {e}"), 403
 
 
-@app.route("/register", methods=["POST"])
+@app.route(f"{API_URL}/register", methods=["POST"])
 def register():
     """
     Create a new user record
     @params: UserModel
-        :- name
+        :- fname
+        :- lname
         :- email
         :- password
         :- created_at (default date time)
@@ -172,7 +179,8 @@ def register():
         )
 
     user = UserModel(
-        name=data.get("name"),
+        fname=data.get("fname"),
+        lname=data.get("lname"),
         email=data.get("email"),
         password=data.get("password"),
         modified_at=datetime.datetime.utcnow(),
@@ -191,7 +199,7 @@ def register():
 
 
 # ROUTE: Index
-@app.route("/")
+@app.route(f"{API_URL}/")
 def home():
     return jsonify("Hello world")
 
