@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.orm import relationship
 from marshmallow import fields, Schema
 from models.UserModel import UserModel
@@ -43,6 +44,25 @@ class EventModel(db.Model):
             )
 
         return _events
+
+    def get_total_hours(id):
+        events = EventModel.query.filter_by(user_id=id).all()
+        hours = []
+        for event in events:
+            hours.append(
+                {
+                    "hours": int(
+                        datetime.timestamp(event.finish)
+                        - datetime.timestamp(event.start)
+                    )
+                    / 3600,
+                    "work-place": event.workplaces.name,
+                    "event-name": event.name,
+                    "event-id": event.id,
+                }
+            )
+
+        return hours
 
     def save(self):
         db.session.add(self)

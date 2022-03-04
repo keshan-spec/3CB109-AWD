@@ -33,7 +33,7 @@ def create_token(id, exp=30):
 
 """
 ROUTES SECTION: Below are all the routes/endpoints for the API
-Sub routes: /auth, /users,
+Sub routes: /auth, /users, /events, /workplaces
 """
 # ROUTES: Error Handles
 @app.errorhandler(404)
@@ -218,7 +218,7 @@ def get_user_workplaces(current_user):
 @token_required
 def get_user_events(current_user):
     """
-    Get the current user's workplaces
+    Get the current user's events
     """
     event = EventModel.get_by_user(current_user.id)
 
@@ -239,6 +239,17 @@ def get_user_events(current_user):
         event[i]["work"] = _work
 
     return jsonify({"user": data, "events": event}), 200
+
+
+@app.route(f"{API_URL}/user/hours", methods=["POST"])
+@token_required
+def get_total_hours(current_user):
+    """
+    Get the total hours worked by a user
+    """
+    hours = EventModel.get_total_hours(current_user.id)
+
+    return jsonify(hours), 200
 
 
 # ROUTE: Index
