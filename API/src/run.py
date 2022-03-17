@@ -199,6 +199,21 @@ def register():
         return jsonify({"SQLALCHEMY ERROR": error}), 500
 
 
+# logout
+@app.route(f"{API_URL}/logout", methods=["POST"])
+@token_required
+def logout(current_user):
+    """
+    Logout a user
+    @params: id
+    """
+    try:
+        current_user.logout(request.headers["x-access-token"])
+        return jsonify({"message": "Logged out"}), 200
+    except Exception as e:
+        return jsonify({"Error": str(e)}), 500
+
+
 @app.route(f"{API_URL}/user/workplc", methods=["GET"])
 @token_required
 def get_user_workplaces(current_user):

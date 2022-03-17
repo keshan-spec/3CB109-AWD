@@ -3,6 +3,7 @@ from unittest import result
 from marshmallow import fields, Schema
 from sqlalchemy.orm import defer, undefer
 from . import db, bcrypt
+from models.BlackListTokensModel import BlackListTokensModel
 
 
 class UserModel(db.Model):
@@ -46,6 +47,12 @@ class UserModel(db.Model):
     @classmethod
     def get_by_id(cls, id):
         return cls.query.get_or_404(id)
+
+    @staticmethod
+    def logout(token):
+        print(f"Logging out User<{token}>")
+        bl_token = BlackListTokensModel(token=token)
+        bl_token.add()
 
     def save(self):
         db.session.add(self)

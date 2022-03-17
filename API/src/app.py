@@ -4,6 +4,7 @@ from flask import Flask, jsonify
 from models.EventModel import EventModel
 from models.WorkPlace import WorkPlaceModel
 from models.UserModel import UserModel
+from models.BlackListTokensModel import BlackListTokensModel
 from config import app_config
 from models import db, bcrypt  # add this new line
 

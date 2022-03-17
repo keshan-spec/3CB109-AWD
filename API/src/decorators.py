@@ -5,6 +5,7 @@ from functools import wraps
 from flask import request, jsonify
 import jwt, os
 from models.UserModel import UserModel
+from models.BlackListTokensModel import BlackListTokensModel
 
 # decorator for verifying the JWT
 def token_required(f):
@@ -17,6 +18,10 @@ def token_required(f):
         # return 401 if token is not passed
         if not token:
             return jsonify({"message": "Token is missing"}), 401
+
+        # if token is blacklisted
+        if BlackListTokensModel.is_token_blacklisted(token):
+            return jsonify({"message": "Token is blacklisted or invalid"}), 401
 
         try:
             # decoding the payload to fetch the stored details
