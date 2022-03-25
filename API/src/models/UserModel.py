@@ -1,5 +1,4 @@
 import datetime
-from unittest import result
 from marshmallow import fields, Schema
 from sqlalchemy.orm import defer, undefer
 from . import db, bcrypt
@@ -14,10 +13,6 @@ class UserModel(db.Model):
     password = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modified_at = db.Column(db.DateTime)
-
-    # # Relationships
-    # events = db.relationship("EventModel")
-    # workplaces = db.relationship("WorkPlaceModel")
 
     def __repr__(self):
         return f"User<id={self.id}, name={self.fname} {self.lname}, email={self.email}>"

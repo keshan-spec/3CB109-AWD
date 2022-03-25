@@ -2,6 +2,8 @@ import datetime
 import os, jwt
 from sqlalchemy.exc import SQLAlchemyError
 from flask import jsonify, request
+from flask_cors import CORS, cross_origin
+from flask import make_response, redirect
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,6 +21,10 @@ env_name = os.getenv("FLASK_ENV")
 API_URL = "/api/v1"
 
 app = create_app(env_name)
+# api_v1_cors_config = {"origins": ["http://localhost:3001"]}
+# CORS(app, resources={"/api/v1/login": api_v1_cors_config})
+cors = CORS(app)
+app.config["CORS_HEADERS"] = "Content-Type"
 
 
 def create_token(id, exp=30):
@@ -128,27 +134,32 @@ def delete_user(current_user, id):
 
 # ROUTES: Auth
 @app.route(f"{API_URL}/login", methods=["POST"])
+@cross_origin()
 def login():
     # creates dictionary of form data
-    auth = request.form
+    auth = request.json
 
-    if not auth or not auth.get("email") or not auth.get("password"):
+    if not auth or not auth["email"] or not auth["password"]:
         # returns 401 if any email or / and password is missing
         return (jsonify({"ERROR": "Credentials missing!"}), 401)
 
-    user = UserModel.query.filter_by(email=auth.get("email")).first()
+    user = UserModel.query.filter_by(email=auth["email"]).first()
     if not user:
         # returns 401 if user does not exist
         return (
-            jsonify({"ERROR": f"Could not find user with email : {auth.get('email')}"}),
+            jsonify({"ERROR": f"Could not find user with email : {auth['email']}"}),
             401,
         )
 
     try:
-        valid, status = user.check_hash(auth.get("password"))
+        valid, status = user.check_hash(auth["password"])
         if valid:
             # generates the JWT Token
             token = create_token(user.id)
+            # set cookie on client
+            # response = make_response(redirect("/"), {"token": token})
+            # response.set_cookie("token", token)
+            # return response
             return jsonify({"token": token}), 200
 
         # returns 403 if password is wrong
@@ -274,4 +285,4 @@ def home():
 
 
 if __name__ == "__main__":
-    app.run()  # run app
+    app.run(port=os.getenv("YSJ_PORT"))  # run app
