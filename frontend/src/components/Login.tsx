@@ -8,7 +8,7 @@ export const Login = () => {
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        fetch('http://localhost:5010/api/v1/login', {
+        fetch('http://ysjcs.net:5010/api/v1/login', {
             method: 'POST',
             mode: 'cors',
             headers: {
